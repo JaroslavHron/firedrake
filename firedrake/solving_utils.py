@@ -1,8 +1,10 @@
 import numpy
 
-import itertools
+from itertools import chain
 
 from pyop2 import op2
+import firedrake.functionspaceimpl as fsi
+from firedrake_configuration import get_config
 from firedrake import function, dmhooks
 from firedrake.exceptions import ConvergenceError
 from firedrake.petsc import PETSc
@@ -19,6 +21,41 @@ KSPReasons = _make_reasons(PETSc.KSP.ConvergedReason())
 
 
 SNESReasons = _make_reasons(PETSc.SNES.ConvergedReason())
+
+
+if get_config()["options"]["petsc_int_type"] == "int32":
+    DEFAULT_KSP_PARAMETERS = {"mat_type": "aij",
+                              "ksp_type": "preonly",
+                              "pc_type": "lu",
+                              "pc_factor_mat_solver_type": "mumps"}
+else:
+    # FIXME: which factorisation package to use in int64?
+    DEFAULT_KSP_PARAMETERS = {}
+
+
+def set_defaults(solver_parameters, arguments, *defaults):
+    """Set defaults for solver parameters.
+
+    :arg solver_parameters: dict of user solver parameters to override/extend defaults
+    :arg arguments: arguments for the bilinear form (need to know if we have a Real block).
+    :arg defaults: Any default sets of parameters to supply."""
+    parameters = dict(chain.from_iterable(d.items() for d in defaults))
+    if any(isinstance(V, fsi.RealFunctionSpace)
+           for V in chain.from_iterable(a.function_space() for a in arguments)):
+        # There's a Real block, override with defaults with nest + jacobi.
+        parameters.update({"pc_type": "jacobi", "mat_type": "nest"})
+    solver_parameters = solver_parameters or {}
+    mat_type = solver_parameters.get("mat_type")
+    pmat_type = solver_parameters.get("pmat_type")
+    # Allow anything, interpret "matfree" as matrix_free.
+    matfree = mat_type == "matfree"
+    pmatfree = pmat_type == "matfree"
+    # No preconditioner by default for matrix-free
+    if matfree or pmatfree:
+        parameters.update({"pc_type": "none"})
+    # Now use the user's solver_parameters
+    parameters.update(solver_parameters)
+    return parameters
 
 
 def check_snes_convergence(snes):
