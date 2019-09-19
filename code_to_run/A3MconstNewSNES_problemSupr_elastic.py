@@ -136,7 +136,7 @@ class my_problem(object):
       #--------------DATA -end -------------
       
       #Define function spaces
-      self.W = VectorFunctionSpace(self.mesh, "CG", 1, dim=6)
+      self.W = VectorFunctionSpace(self.mesh, "CG", 1, dim=3)
       self.V = VectorFunctionSpace(self.mesh, "CG", 1, dim=3)
       self.Q = FunctionSpace(self.mesh, "CG", 1)
       info("W.dim(): %s" % self.W.dim())
@@ -161,19 +161,28 @@ class my_problem(object):
       
       #Def. unknown and test function
 
-      (u_1, u_2, u_3, et1_, et2_, et3_) = split(TestFunction(self.W))
+      (u_1, u_2, u_3) = split(TestFunction(self.W))
+      #(u_1, u_2, u_3, et1_, et2_, et3_) = split(TestFunction(self.W))
       u_ = as_vector([u_1, u_2, u_3])
       
       #Current unknown
       self.w = Function(self.W)
-      (u1, u2, u3, et1, et2, et3) = split(self.w)
+      (u1, u2, u3) = split(self.w)
+      #(u1, u2, u3, et1, et2, et3) = split(self.w)
       u = as_vector([u1, u2, u3])
+      et1 = 0
+      et2 = 0
+      et3 = 0
       et0 = 1.0 - et1 - et2 - et3
       
       #previous time step
       self.w0 = Function(self.W)
-      (u01, u02, u03, et1p, et2p, et3p) = split(self.w0)
+      (u01, u02, u03) = split(self.w0)
+      #(u01, u02, u03, et1p, et2p, et3p) = split(self.w0)
       u0 = as_vector([u01, u02, u03])
+      et1p = 0
+      et2p = 0
+      et3p = 0
       et0p = 1.0 - et1p - et2p - et3p
       
       #Voigtova notace
@@ -188,11 +197,12 @@ class my_problem(object):
       self.Ff = I + grad(u) #deformation gradient
       self.Ff = variable(self.Ff)
       
-      invFt=as_matrix([[exp(Logalpha*(-et2 - et3) - Logbeta*et1), 0, 0],
-                       [0, exp(Logalpha*(-et1 - et3) - Logbeta*et2), 0],
-                       [0, 0, exp(Logalpha*(-et1 - et2) - Logbeta*et3)]])
+      #invFt=as_matrix([[exp(Logalpha*(-et2 - et3) - Logbeta*et1), 0, 0],
+                       #[0, exp(Logalpha*(-et1 - et3) - Logbeta*et2), 0],
+                       #[0, 0, exp(Logalpha*(-et1 - et2) - Logbeta*et3)]])
       
-      Fe = self.Ff*invFt
+      Fe = self.Ff
+      #Fe = self.Ff*invFt
 
       CemI = Fe.T*Fe - I
       #He = 0.5*(CemI - 0.5*CemI*CemI + 0.333333333*CemI*CemI*CemI - 0.25*CemI*CemI*CemI*CemI)
@@ -209,19 +219,20 @@ class my_problem(object):
       #e = as_vector(voigt(Ee))
 
       L = Constant(L1)
-      self.FB = 0.5*inner(e,L*e) + et0*phi0 + et1*phi1 + et2*phi2 + et3*phi3 # det(Ft) missing
-      FI = eps0*inner(grad(et0),grad(et0)) + omega0*et0*(1.0-et0) +eps1*inner(grad(et1),grad(et1)) + omega1*et1*(1.0-et1) + eps2*inner(grad(et2),grad(et2)) + omega2*et2*(1.0-et2) + eps3*inner(grad(et3),grad(et3)) + omega3*et3*(1.0-et3)
+      self.FB = 0.5*inner(e,L*e) #+ et0*phi0 + et1*phi1 + et2*phi2 + et3*phi3 # det(Ft) missing
+      #FI = eps0*inner(grad(et0),grad(et0)) + omega0*et0*(1.0-et0) +eps1*inner(grad(et1),grad(et1)) + omega1*et1*(1.0-et1) + eps2*inner(grad(et2),grad(et2)) + omega2*et2*(1.0-et2) + eps3*inner(grad(et3),grad(et3)) + omega3*et3*(1.0-et3)
       
-      F = self.FB + FI
-      Diss = 0.5*(nu0*(et0-et0p)*(et0-et0p) + nu1*(et1-et1p)*(et1-et1p) + nu2*(et2-et2p)*(et2-et2p) + nu3*(et3-et3p)*(et3-et3p)) / self.dt
-      Pi = (F + Diss)*dx
+      F = self.FB #+ FI
+#      Diss = 0.5*(nu0*(et0-et0p)*(et0-et0p) + nu1*(et1-et1p)*(et1-et1p) + nu2*(et2-et2p)*(et2-et2p) + nu3*(et3-et3p)*(et3-et3p)) / self.dt
+      Pi = F*dx
+      #Pi = (F + Diss)*dx
 
-      pen0 = conditional(lt(et0, 0.0), rho, 0.0)*et0*et0
-      pen1 = conditional(lt(et1, 0.0), rho, 0.0)*et1*et1
-      pen2 = conditional(lt(et2, 0.0), rho, 0.0)*et2*et2
-      pen3 = conditional(lt(et3, 0.0), rho, 0.0)*et3*et3
+      #pen0 = conditional(lt(et0, 0.0), rho, 0.0)*et0*et0
+      #pen1 = conditional(lt(et1, 0.0), rho, 0.0)*et1*et1
+      #pen2 = conditional(lt(et2, 0.0), rho, 0.0)*et2*et2
+      #pen3 = conditional(lt(et3, 0.0), rho, 0.0)*et3*et3
       
-      pen = (pen0 + pen1 + pen2 + pen3)*dx
+      #pen = (pen0 + pen1 + pen2 + pen3)*dx
       
       self.Rc = 50.0
       rhotwo = 500.0
@@ -236,7 +247,7 @@ class my_problem(object):
       contact = penpot*self.ds_t
       
       #Derivatives
-      self.R = derivative(Pi + pen + contact, self.w)
+      self.R = derivative(Pi + contact, self.w)
       J = derivative(self.R, self.w)
       
       self.pvd = File("results_%s/state.pvd" % fileName)
@@ -320,7 +331,7 @@ class my_problem(object):
             "mg_levels_pc_type": "pbjacobi"
       }
       
-      self.sp = mg
+      self.sp = lu
       self.solver  = NonlinearVariationalSolver(self.problem, solver_parameters=self.sp)
       
    def solve(self, t_init, t_end, velocity, loading):
@@ -334,16 +345,18 @@ class my_problem(object):
       info("dt = {}".format(float(self.dt)))
       
       uviz = Function(self.V, name="displacement")
-      etw1 = Function(self.Q, name="eta1")
-      etw2 = Function(self.Q, name="eta2")
-      etw3 = Function(self.Q, name="eta3")
+      #etw1 = Function(self.Q, name="eta1")
+      #etw2 = Function(self.Q, name="eta2")
+      #etw3 = Function(self.Q, name="eta3")
       
-      (uw1, uw2, uw3, etw1_, etw2_, etw3_) = split(self.w)
+      (uw1, uw2, uw3) = split(self.w)
+      #(uw1, uw2, uw3, etw1_, etw2_, etw3_) = split(self.w)
       uviz.interpolate(as_vector([uw1, uw2, uw3]))
-      etw1.interpolate(etw1_)
-      etw2.interpolate(etw2_)
-      etw3.interpolate(etw3_)
-      self.pvd.write(uviz, etw1, etw2, etw3, time=t_init)
+      #etw1.interpolate(etw1_)
+      #etw2.interpolate(etw2_)
+      #etw3.interpolate(etw3_)
+      self.pvd.write(uviz, time=t_init)
+      #self.pvd.write(uviz, etw1, etw2, etw3, time=t_init)
       
       #tic()
       # Time-stepping
@@ -388,11 +401,11 @@ class my_problem(object):
          if (ok == 0):
             info("Step back!")
 
-            r = Function(self.W)
-            assemble(self.R, tensor=r)
-            for bc in self.bcs : bc.apply(r, u=self.w)
-            (ru1, ru2, ru3, ret1, ret2, ret3) = split(r)
-            info("residua |ru1|, |ru2|, |ru3|, |ret1|, |ret2|, |ret3| = {{{0:f}, {1:f}, {2:f}, {3:f}, {4:f}, {5:f}}},".format(norm(ru1), norm(ru2), norm(ru3), norm(ret1), norm(ret2), norm(ret3)))
+            #r = Function(self.W)
+            #assemble(self.R, tensor=r)
+            #for bc in self.bcs : bc.apply(r, u=self.w)
+            #(ru1, ru2, ru3, ret1, ret2, ret3) = split(r)
+            #info("residua |ru1|, |ru2|, |ru3|, |ret1|, |ret2|, |ret3| = {{{0:f}, {1:f}, {2:f}, {3:f}, {4:f}, {5:f}}},".format(norm(ru1), norm(ru2), norm(ru3), norm(ret1), norm(ret2), norm(ret3)))
 
             self.t -= float(self.dt)/2.0
             self.dt.assign(float(self.dt)/2.0)
@@ -422,12 +435,14 @@ class my_problem(object):
          
          # Extract solutions:
          if (ii % 4 == 0):
-            (uw1, uw2, uw3, etw1_, etw2_, etw3_) = split(self.w)
+            (uw1, uw2, uw3) = split(self.w)
+            #(uw1, uw2, uw3, etw1_, etw2_, etw3_) = split(self.w)
             uviz.interpolate(as_vector([uw1, uw2, uw3]))
-            etw1.interpolate(etw1_)
-            etw2.interpolate(etw2_)
-            etw3.interpolate(etw3_)
-            self.pvd.write(uviz, etw1, etw2, etw3, time=self.t)
+            #etw1.interpolate(etw1_)
+            #etw2.interpolate(etw2_)
+            #etw3.interpolate(etw3_)
+            self.pvd.write(uviz, time=self.t)
+            #self.pvd.write(uviz, etw1, etw2, etw3, time=self.t)
 
          self.w0.assign(self.w)
 

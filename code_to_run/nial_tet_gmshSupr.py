@@ -55,19 +55,19 @@ levels = 3
 mh = MeshHierarchy(base, levels, distribution_parameters=distribution_parameters)
 mesh = mh[-1]
 
-from A3MconstNewSNES_problemSupr import my_problem
+from A3MconstNewSNES_problemSupr_elastic import my_problem
 
-nial_problem = my_problem(A, mesh, bndry, "martensite_gmsh_Pade2_nodal_noconst", extruded=False)
+nial_problem = my_problem(A, mesh, bndry, "martensite_gmsh_Pade2_nodal_elastic", extruded=False)
 
 
-nial_problem.solve(0.0, 20.0/velocity, velocity, True)
+nial_problem.solve(0.0, 40.0/velocity, velocity, True)
 
-chk = DumbCheckpoint("dump_loaded_Pade2_nodal_noconsts", mode=FILE_CREATE)
-chk.store(nial_problem.w, name="solution")
-chk.close()
-info("Loading saved")
+#chk = DumbCheckpoint("dump_loaded_Pade2_nodal_noconsts", mode=FILE_CREATE)
+#chk.store(nial_problem.w, name="solution")
+#chk.close()
+#info("Loading saved")
 
-nial_problem.solve(20.0/velocity, 40.0/velocity, velocity, False)
+#nial_problem.solve(20.0/velocity, 40.0/velocity, velocity, False)
 
 
 #chk = DumbCheckpoint("dump_loaded_Pade2_nodal_noconsts", mode=FILE_READ)
