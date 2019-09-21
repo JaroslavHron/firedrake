@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Low-level numbering for multigrid support
 from firedrake.petsc import PETSc
 from firedrake import dmplex
@@ -121,9 +123,12 @@ def fine_to_coarse_nodes(Vf, Vc, np.ndarray[PetscInt, ndim=2, mode="c"] fine_to_
     if extruded:
         coarse_offset = Vc.offset
         fine_offset = Vf.offset
-        layers = Vc.mesh().layers - 1
+        coarse_layers = Vc.mesh().layers - 1
         fine_layers = Vf.mesh().layers - 1
-        
+
+        ratio = fine_layers // coarse_layers
+        assert ratio * coarse_layers == fine_layers # check ratio is an int
+
     fine_cells = fine_to_coarse_cells.shape[0]
     coarse_per_fine = fine_to_coarse_cells.shape[1]
     coarse_per_cell = coarse_map.shape[1]
@@ -139,14 +144,13 @@ def fine_to_coarse_nodes(Vf, Vc, np.ndarray[PetscInt, ndim=2, mode="c"] fine_to_
                 node = fine_map[i, j]
                 if extruded:
                     for fine_layer in range(fine_layers):
-                        coarse_layer = fine_layer // 2
+                        coarse_layer = fine_layer // ratio
                         for k in range(coarse_per_cell):
                             fine_to_coarse_map[node + fine_offset[j]*fine_layer, k] = coarse_map[coarse_cell, k] + coarse_offset[k]*coarse_layer
                 else:
                     for k in range(coarse_per_cell):
                         fine_to_coarse_map[node, coarse_per_cell*l + k] = coarse_map[coarse_cell, k]
 
-        
     return fine_to_coarse_map
 
 

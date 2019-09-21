@@ -15,6 +15,7 @@ from ufl import Form
 from .ufl_expr import TestFunction
 
 from tsfc import compile_form as tsfc_compile_form
+from tsfc.parameters import PARAMETERS as tsfc_default_parameters
 
 from pyop2.caching import Cached
 from pyop2.op2 import Kernel
@@ -25,6 +26,11 @@ from coffee.base import Invert
 from firedrake.formmanipulation import split_form
 
 from firedrake.parameters import parameters as default_parameters
+from firedrake import utils
+
+
+# Set TSFC default scalar type at load time
+tsfc_default_parameters["scalar_type"] = utils.ScalarType_c
 
 
 KernelInfo = collections.namedtuple("KernelInfo",
@@ -144,7 +150,7 @@ SplitKernel = collections.namedtuple("SplitKernel", ["indices",
                                                      "kinfo"])
 
 
-def compile_form(form, name, parameters=None, inverse=False, split=True, interface=None, coffee=True):
+def compile_form(form, name, parameters=None, inverse=False, split=True, interface=None, coffee=False):
     """Compile a form using TSFC.
 
     :arg form: the :class:`~ufl.classes.Form` to compile.
